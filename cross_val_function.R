@@ -7,7 +7,7 @@
 
 cross_val <- function(df, k = 10) {
   library(rpart)
-  listas <- gen_cross_validation_sets(df = data, k = k)
+  listas <- gen_cross_validation_sets(df = df, k = k)
   performance <-  matrix(NA, ncol=7, nrow=k)
   for ( i in 1:length(listas) ) {
     d <- get_sets(lista = listas, i = i)
