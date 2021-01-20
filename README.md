@@ -16,6 +16,8 @@ Se describen una serie de funciones útiles en R para analizar datos y crear ár
 
 **scores_function.R**: función que permite computar medidas de desempeno del clasificador. Incluye Accuracy, Recall, Precision and F2.
 
+**SBC_function**: función que permite llevar a cabo undersampling a clase mayoritaria utilizando método de: Yen, S. J., & Lee, Y. S. (2009). Cluster-based under-sampling approaches for imbalanced data distributions. Expert Systems with Applications, 36(3), 5718-5727.
+
 
 
 ###Scripts
