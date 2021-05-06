@@ -1,17 +1,29 @@
 # Ejemplo classification tree
 
-# Los arboles de clasificacion es una tecnica de machine learning
+# Los arboles de clasificacion es una tecnica de Machine Learning
 # basado en el algoritmo de particion recursiva, y es la base
-# para otros algoritmo mas potentes como el rendom forest.
+# para otros algoritmo mas potentes como el Random Forest.
 
 # Uilizamos bbdd de ejemplo del titanic que contiene 13 variables
 # y 1309 observaciones. La idea es predecir que personas van a 
 # sobrevivir despues de la colision del Titanic con el iceberg.
 
+# Dictionary:
+#   survival	Survival	0 = No, 1 = Yes
+#   pclass	Ticket class	1 = 1st, 2 = 2nd, 3 = 3rd
+#   sex	Sex	
+#   Age	Age in years	
+#   sibsp	# of siblings / spouses aboard the Titanic	
+#   parch	# of parents / children aboard the Titanic	
+#   ticket	Ticket number	
+#   fare	Passenger fare	
+#   cabin	Cabin number	
+#   embarked	Port of Embarkation	C = Cherbourg, Q = Queenstown, S = Southampton
 
 # # # # # # 0. CARGA Y LIMPIEZA DE DATOS
 remove(list = ls())
 library(dplyr)
+
 path <- 'https://raw.githubusercontent.com/guru99-edu/R-Programming/master/titanic_data.csv'
 data <- read.csv(path)
 str(data)
@@ -22,15 +34,25 @@ table(data$survived)
 # # # # # # 0. CARGA FUNCIONES:
 source("scores_function.R")
 source("crear_train_test_function.R")
-source("get_cross_validation_sets_function.R")
+source("gen_cross_validation_sets_function.R")
 source("get_sets_function.R")
 source("cross_val_function.R")
+
+
+#  ------> Solo en caso que las variables sex, embarked, age y fare no queden como "factor".
+data$sex <- as.factor(data$sex)
+data$embarked <- as.factor(data$embarked )
+data$age <- as.factor(data$age)
+data$fare <- as.factor(data$fare)
+str(data)
+
+
 
 
 
 # # # # # # LIMPIEZA BBDD
 # Hay varios valores NA. Aqui vamos a eliminar observaciones que 
-# no tienen toda la información disponible.
+# no tienen toda la informaci??n disponible.
 
 # Tambien vamos a eliminar variables que no utilizaremos 
 # tales como  home.dest,cabin, name, X y ticket
@@ -40,11 +62,36 @@ source("cross_val_function.R")
 library(dplyr)
 # Drop variables
 df <- data %>%
-  select(-c(home.dest, cabin, name, x, ticket)) %>% 
-  mutate(pclass = factor(pclass, levels = c(1, 2, 3), labels = c('Upper', 'Middle', 'Lower')),
-         survived = factor(survived, levels = c(0, 1), labels = c('No', 'Yes'))) %>%
+  select( -c(home.dest, cabin, name, x, ticket ) ) %>%
+  mutate_all(funs(replace(., .=='?', NA))) %>% 
+  mutate(pclass = factor(  pclass , levels = c(1,2,3), labels = c('Upper', 'Middle', 'Lower')),
+         survived = factor( survived, levels = c(0,1), labels = c('No', 'Yes')))  %>%
   na.omit()
 glimpse(df)
+
+
+
+table(df$pclass) # factor
+table(df$survived) # factor
+table(df$sex) # factor
+table(df$age) # factor *******
+table(df$sibsp) #entero
+table(df$parch) #entero
+table(df$fare)  #factor ****
+hist(df$fare)
+table(df$embarked)  # factor
+
+
+# dropear factores sin uso.
+df <- df %>%  # df <- droplevels(df)
+  droplevels() 
+
+# pero age y fare siguen siendo factor, las queremos en formato numerico.
+df$age <- as.numeric(df$age)
+df$fare <- as.double( levels( df$fare ))[ df$fare ]
+str(df)
+
+
 
 
 
@@ -60,40 +107,17 @@ glimpse(df)
 # video: https://youtu.be/pOJIgdJ85S8 o como hacer una funcion en:  https://sites.google.com/view/channelrsvideos
 
 set.seed(678) # solo si queremos replicar resultados despues
-data_train <- crear_train_test(data = df, size = 0.8, train = TRUE)
-data_test <- crear_train_test(data = df, size = 0.8, train = FALSE)
-dim(data_train)
+data_ <- crear_train_test(data = df, size = 0.8)
 
+data_train <- data_[[1]]
+data_test <- data_[[2]]
+
+# para saber si las proporciones de la variable clase se mantienen.
+prop.table(table(df$survived))
+prop.table(table(data_train$survived))
 prop.table(table(data_test$survived))
-install.packages("rpart.plot")
 
 
-
-# volvemos al paso de LIMPIEZA DE DATOS 
-# vemos que hay variables que son FACTOR y no debieran serlo!!!!
-str(df)
-table(df$fare)
-which(df$fare == "?") # 1226
-df <- df[-1226, ]
-
-table(df$embarked)
-which(df$embarked == "?") # 169 285
-df <- df[-which(df$embarked == "?") ,  ]
-
-
-table(df$age)
-df <- df[-which(df$age == "?")  ,]
-
-str(df)  # como comvertimos variables fare y age de factor a numeric?
-# primero notemos que la variable embarked, aun cuando no tiene ?, sigue con niveles ?
-table(df$embarked)
-
-df <- df %>%  # df <- droplevels(df)
-  droplevels() 
-
-df$age <- as.numeric(df$age)
-df$fare <- as.double(levels( df$fare ))[ df$fare ]
-# FIN volvemos al paso de LIMPIEZA DE DATOS 
 
 
 
@@ -111,17 +135,40 @@ df$fare <- as.double(levels( df$fare ))[ df$fare ]
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
-# # # # # #  2. CONSTRUIR EL MODELO
+# # # # # #  2. ENTRENAR EL MODELO
 # Por defecto la funcion rpart() utiliza indice  GINI de impureza para 
 # particionar el arbol. Mientras mas alto el indice, implica que las instancias
 # son mas distintas en el nodo.
 
+install.packages("rpart.plot")
 
 library(rpart)
 library(rpart.plot)
-modelo <- rpart(survived ~., data = data_train, method = 'class')
-rpart.plot(modelo)
-table(df$survived)/nrow(df)
+
+
+modelo <- rpart(survived ~. , data = data_train, method = 'class')
+
+
+modelo2 <- rpart(survived ~ str()
+                 data = data_train, method = 'class')
+
+
+  rpart.plot(modelo)
+rpart.plot(modelo2)
+
+
+
+# % de sobrevivientes en el set train
+table(data_train$survived)/nrow(data_train)
+# % de mujeres
+sum(data_train$sex == 'female')/nrow(data_train) # 37%
+
+sum(data_train$survived == 'Yes' & data_train$sex == 'female')/nrow(data_train) #28% (El 76% de este 28% sobrevive)
+sum(data_train$survived == 'No' & data_train$sex == 'female')/nrow(data_train) #9%
+
+
+
+
 print(modelo)
 rpart.control()
 
@@ -140,10 +187,13 @@ rpart.control()
 
 
 
+
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 # # # # # #  3. TEST Y PREDICT CON CT
 predicciones <- predict(modelo, data_test, type = 'class')
-table_mat <- table(data_test$survived, predicciones)
+#table_mat <- table(data_test$survived, predicciones)
+table_mat <- table(predicciones, data_test$survived)
 table_mat
 
 
@@ -233,28 +283,12 @@ cross_val <- function(df, k = 10) {
 }
 
 
+
+
 # # # # # #  6. CROSS VALIDATIONS (PARTE II)
 # Hacer 10-FCV sobre data frame df.
 # ejemplo:
 desempeno <- cross_val(df = df, k = 10)
 colMeans(desempeno)
 
-
-
-
-
-
-
-
-
-
-
-
-
-# # # # # #  7.   TUNEO DE PARAMETROS.
-# rpart.control(minsplit = 20, minbucket = round(minsplit/3), maxdepth = 30)
-# Arguments:
-# -minsplit: Set the minimum number of observations in the node before the algorithm perform a split
-# -minbucket:  Set the minimum number of observations in the final note i.e. the leaf
-# -maxdepth: Set the maximum depth of any node of the final tree. The root node is treated a depth 0
 
