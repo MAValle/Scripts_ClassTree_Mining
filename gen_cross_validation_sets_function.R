@@ -15,6 +15,7 @@
 # inputs: i = sets de validacion deseado ( 1 <= i <= k)
 # output: test_set y train_set.
 
+
 gen_cross_validation_sets <- function(df, k = 10) {
   
   nfilas <- nrow(df)
