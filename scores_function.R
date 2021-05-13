@@ -13,14 +13,17 @@
 # medidas accuracy, recall, precision y f1 para cada valor de la clase.
 
 scores <- function(predicted, expected) {
-  predicted <- factor(as.character(predicted), levels=unique(as.character(expected) ) )
-  expected  <- as.factor(expected)
-  cm = as.matrix(table(expected, predicted))
+  #predicted <- factor(as.character(predicted), levels=unique(as.character(expected) ) )
+  #expected  <- as.factor(expected)
+  #cm = as.matrix(table(expected, predicted))
+  
+  cm <-  table(expected, predicted )
+  
   
   accuracy <- sum(diag(cm)) / sum(cm)
   precision <- diag(cm) / colSums(cm) # precision para clase NO y YES
   recall <- diag(cm) / rowSums(cm)
-  recall <- rev(recall) #  recall para clase NO y YES
+  #recall <- rev(recall) #  recall para clase NO y YES
   f1 <-  ifelse(precision + recall == 0, 0, 2 * precision * recall / (precision + recall))
   
   #Assuming that F1 is zero when it's not possible compute it
