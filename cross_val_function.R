@@ -22,5 +22,3 @@ cross_val <- function(df, k = 10) {
   perfromance <- as.data.frame(performance)
   return(performance)
 }
-
-
