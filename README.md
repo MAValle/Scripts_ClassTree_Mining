@@ -24,4 +24,6 @@ Se describen una serie de funciones útiles en R para analizar datos y crear ár
 
 **material_apoyo_ClassificationTree.R**: Ejemplo de aplicación de Classification Tree (CT), utilizando las funciones descritas.
 
+** material_apoyo_ClassificationTree2.R: Ejemplo 2 de aplicación de Classification Tree (CT), para el problema de poda de árboles.
+
 **script_apoyo_undersampling.R**: Ejemplo de aplicación de Undersampling basado en clustering.
