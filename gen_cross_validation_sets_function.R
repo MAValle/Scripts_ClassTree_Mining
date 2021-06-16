@@ -16,20 +16,34 @@
 # output: test_set y train_set.
 
 
+
+# 15-jun-21
+# Version 2: 
+# vamos a utilizar funcion gen_cross_validation_sets2 que evita el problema de 
+# subampleo producido por la version original. Esta version se hace sobre la 
+# base de aleatorizar el orden de todas las filas de df y luego tomar floor(nfilas/k)
+# consecutivas para generar los folds.
+
+
 gen_cross_validation_sets <- function(df, k = 10) {
   
   nfilas <- nrow(df)
   filas_per_set <-  floor(nfilas/k)
   
   result <- list(k)
-  temp <- df
+  #temp <- df
   
+  ids <- sample(c(1:nrow(df)), size = filas_per_set*k)
+  new_df_shuffled <- df[ids,]
+  
+  start = 1
   for (v in 1:k) {
-    ids <- sample(c(1:nrow(temp)), size = filas_per_set)
-    temp <- temp[-ids, ]
-    result[[v]] <- df[ids, ]  # en result quedan almacenados los 1/k datasets
+    end = v*filas_per_set
+    result[[v]] <- new_df_shuffled[start:end, ]  # en result quedan almacenados los 1/k datasets
+    start = end+1
   }
   salida <-  return(result)
 }
+
 # ejemplo
 # listas <- gen_cross_validation_sets(df = df, k = 10)
